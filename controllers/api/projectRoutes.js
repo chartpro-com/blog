@@ -1,8 +1,25 @@
+const badWords = require('bad-words');
 const router = require('express').Router();
 const { Project } = require('../../models');
 const withAuth = require('../../utils/auth');
 
-router.post('/', withAuth, async (req, res) => {
+const filterBadWords = (req, res, next) => {
+  const filter = new badWords();
+  const filteredBody = {};
+
+  for (const [key, value] of Object.entries(req.body)) {
+    if (typeof value === 'string') {
+      filteredBody[key] = filter.clean(value);
+    } else {
+      filteredBody[key] = value;
+    }
+  }
+
+  req.body = filteredBody;
+  next();
+};
+
+router.post('/', withAuth, filterBadWords, async (req, res) => {
   try {
     const newProject = await Project.create({
       ...req.body,
